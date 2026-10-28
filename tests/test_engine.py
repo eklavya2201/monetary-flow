@@ -86,3 +86,14 @@ def test_stop_placement_failure_exits(tmp_path, monkeypatch):
     e.cycle()
     t = st.trades("id=?", (tid,))[0]
     assert t["status"] == "EXITING" and t["exit_reason"] == "stop-loss could not be placed"
+
+
+def test_rejected_stop_exits_immediately(tmp_path, monkeypatch):
+    st, e, b, tid = setup(tmp_path, monkeypatch)
+    b.orders["1"].update(status=FILLED, fill=400.0)
+    e.cycle()
+    sid = st.trades("id=?", (tid,))[0]["stop_order"]
+    b.orders[sid]["status"] = "REJECTED"
+    e.cycle()
+    t = st.trades("id=?", (tid,))[0]
+    assert t["status"] == "EXITING" and t["exit_reason"] == "stop-loss rejected by broker"

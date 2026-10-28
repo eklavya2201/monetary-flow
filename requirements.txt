@@ -11,3 +11,6 @@ growwapi==1.5.0
 pyotp==2.10.0
 anthropic==2.3.0
 pytest
+smartapi-python==1.5.5
+logzero
+websocket-client

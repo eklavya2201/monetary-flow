@@ -94,12 +94,24 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;t
     </section>
 
     <section id="v-setup" class="view">
-      <div class="card"><h3>1 · Groww broker</h3>
-        <div class="step" id="s1"><span class="n">1</span><span>Groww Trade API key + TOTP secret</span></div>
-        <label>API key (TOTP type)</label><input id="k-groww" type="password" placeholder="saved keys are never shown again">
-        <label>TOTP secret</label><input id="k-totp" type="password" placeholder="from Groww Cloud → API Keys → Generate TOTP">
-        <p class="hint">Groww Cloud → API Keys. Needs the Trade API subscription and your server's static IP registered there.</p>
-        <div class="btns" style="margin-top:10px"><button class="primary" onclick="saveKeys()">Save keys</button><button onclick="testBroker()">Test (read-only)</button></div>
+      <div class="card"><h3>1 · Broker</h3>
+        <div class="step" id="s1"><span class="n">1</span><span>Connect your broker's API</span></div>
+        <label>Broker</label>
+        <select id="broker" onchange="showBroker()"><option value="angel">Angel One (free SmartAPI)</option><option value="groww">Groww (Trade API, paid)</option></select>
+        <div id="b-angel">
+          <label>SmartAPI key</label><input id="k-a-key" type="password" placeholder="smartapi.angelbroking.com → My apps">
+          <label>Client code</label><input id="k-a-client" type="password" placeholder="your Angel One client ID">
+          <label>MPIN</label><input id="k-a-mpin" type="password" inputmode="numeric" placeholder="4-digit MPIN">
+          <label>TOTP secret</label><input id="k-a-totp" type="password" placeholder="from 'Enable TOTP' on SmartAPI">
+          <p class="hint">Register your server's static IP on the SmartAPI app (needed for orders).</p>
+        </div>
+        <div id="b-groww" style="display:none">
+          <label>API key (TOTP type)</label><input id="k-groww" type="password" placeholder="Groww Cloud → API Keys">
+          <label>TOTP secret</label><input id="k-totp" type="password" placeholder="Generate TOTP on the same page">
+          <p class="hint">Needs the Trade API subscription and your server's static IP registered.</p>
+        </div>
+        <p class="hint">Saved keys are encrypted and never shown again.</p>
+        <div class="btns" style="margin-top:10px"><button class="primary" onclick="saveKeys()">Save broker</button><button onclick="testBroker()">Test (read-only)</button></div>
         <p class="hint" id="testout"></p>
       </div>
 
@@ -114,16 +126,16 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;t
 
       <div class="card"><h3>3 · Capital & risk</h3>
         <label>Sleeve capital (₹) - only this much is ever traded</label><input id="cap" type="number" min="0" step="100">
-        <label>Style</label><select id="product"><option value="CNC">Swing / delivery (CNC)</option><option value="MIS">Intraday, cash only (MIS)</option></select>
+        <label>Style</label><select id="product"><option value="CNC">Swing / delivery (CNC)</option><option value="MIS">Intraday, cash only (MIS) - parked</option></select>
         <label>Risk per trade: <b id="rpt-v"></b> (max 1%)</label><input id="rpt" type="range" min="0.25" max="1" step="0.05">
         <label>Max positions: <b id="mp-v"></b> (max 3)</label><input id="mp" type="range" min="1" max="3" step="1">
         <p class="hint">Fixed by the server, you can only tighten: 70% max deployed · 2% daily stop · 5% weekly stop · R:R ≥ 2 after costs · stop-loss on every position · no averaging down · no leverage.</p>
         <button class="primary" style="width:100%;margin-top:12px" onclick="saveSettings()">Save settings</button>
       </div>
 
-      <div class="card"><h3>4 · Fund your Groww account</h3>
-        <p class="hint" style="margin-top:0">Money never passes through Monetary Flow. Add it to your own Groww balance with UPI inside the Groww app, then come back. The engine checks Groww's free balance before every buy.</p>
-        <a href="https://groww.in/" target="_blank" rel="noopener"><button style="width:100%;margin-top:10px">Open Groww → Add money (UPI)</button></a>
+      <div class="card"><h3>4 · Fund your broker account</h3>
+        <p class="hint" style="margin-top:0">Money never passes through Monetary Flow. Add it to your own broker balance with UPI inside the broker's app, then come back. The engine checks your broker's free balance before every buy.</p>
+        <a href="https://www.angelone.in/" target="_blank" rel="noopener"><button style="width:100%;margin-top:10px">Open Angel One → Add funds (UPI)</button></a>
       </div>
 
       <div class="card"><h3>5 · Go live</h3>
@@ -173,17 +185,19 @@ function render(){const r=S.report,s=S.settings;
  $("positions").innerHTML=r.open_positions.length?r.open_positions.map(p=>`<div class="pos"><div><b>${p.symbol}</b> <span class="pill">${p.status}</span><small>${p.qty} @ ${inr(p.entry_price||p.plan_entry)} · SL ${inr(p.stop)} · T ${inr(p.target)}</small></div><div style="text-align:right"><small>risk</small>${inr(p.risk_amount)}</div></div>`).join(""):'<p class="hint">None. Cash is a position too.</p>';
  $("today").innerHTML=r.trades_today.length?r.trades_today.map(t=>`<div class="pos"><div><b>${t.symbol}</b> ${t.status}<small>${t.exit_reason||t.why?.split("|")[0]||""}</small></div><div>${t.pnl==null?"":`<span class="${t.pnl>=0?"up":"down"}">${signed(t.pnl)}</span>`}</div></div>`).join("")+`<p class="hint">Fees today ${inr(r.fees_today)}</p>`:"No trades today.";
  $("log").innerHTML=S.logs.map(l=>`<div class="${l.level}">${new Date(l.ts*1000).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})} · ${l.msg.replace(/</g,"&lt;")}</div>`).join("");
- spark(S.curve);const k=S.secrets;$("s1").classList.toggle("done",k.groww_api_key&&k.groww_totp_secret)}
-function fillForm(){const s=S.settings;$("cap").value=s.capital;$("product").value=s.product;$("rpt").value=s.risk_per_trade_pct;$("mp").value=s.max_positions;$("llm").value=s.llm_provider;$("llm-model").value=s.llm_model;$("llm-url").value=s.llm_base_url;
+ spark(S.curve);const k=S.secrets,need=s.broker=="angel"?["angel_api_key","angel_client_code","angel_mpin","angel_totp_secret"]:["groww_api_key","groww_totp_secret"];$("s1").classList.toggle("done",need.every(n=>k[n]))}
+function fillForm(){const s=S.settings;$("broker").value=s.broker;showBroker();$("cap").value=s.capital;$("product").value=s.product;$("rpt").value=s.risk_per_trade_pct;$("mp").value=s.max_positions;$("llm").value=s.llm_provider;$("llm-model").value=s.llm_model;$("llm-url").value=s.llm_base_url;
  $("rpt-v").textContent=s.risk_per_trade_pct+"%";$("mp-v").textContent=s.max_positions}
 $("rpt").oninput=e=>$("rpt-v").textContent=e.target.value+"%";$("mp").oninput=e=>$("mp-v").textContent=e.target.value;
 async function refresh(){try{S=await api("/api/status");render()}catch(e){toast(e.message)}}
 async function boot(){$("login").classList.remove("on");$("app").style.display="block";$("nav").style.display="flex";await refresh();fillForm();clearInterval(timer);timer=setInterval(refresh,20000)}
 async function ctl(a){try{const r=await api("/api/engine/"+a,{});toast(r.result);refresh()}catch(e){toast(e.message)}}
 async function kill(){if(!confirm("Cancel pending orders and SELL every open position at market now?"))return;ctl("kill")}
-async function saveKeys(){const b={};if($("k-groww").value)b.groww_api_key=$("k-groww").value;if($("k-totp").value)b.groww_totp_secret=$("k-totp").value;if($("k-llm").value)b.llm_api_key=$("k-llm").value;
- try{await api("/api/secrets",b);["k-groww","k-totp","k-llm"].forEach(i=>$(i).value="");toast("Keys saved (encrypted)");refresh()}catch(e){toast(e.message)}}
-async function testBroker(){$("testout").textContent="Checking...";try{const r=await api("/api/test-broker",{});$("testout").innerHTML=r.ok?`<span class=ok>Connected</span> · client ${r.ucc||"?"} · free ₹${r.funds} · ${r.holdings} holdings · NIFTY ${r.nifty?.price}`:`<span class=bad>${r.error}</span>`}catch(e){$("testout").innerHTML=`<span class=bad>${e.message}</span>`}}
+const KEYS={"k-groww":"groww_api_key","k-totp":"groww_totp_secret","k-a-key":"angel_api_key","k-a-client":"angel_client_code","k-a-mpin":"angel_mpin","k-a-totp":"angel_totp_secret","k-llm":"llm_api_key"};
+function showBroker(){const v=$("broker").value;$("b-angel").style.display=v=="angel"?"block":"none";$("b-groww").style.display=v=="groww"?"block":"none"}
+async function saveKeys(){const b={};for(const[id,n]of Object.entries(KEYS))if($(id).value)b[n]=$(id).value;
+ try{if($("broker").value!=S.settings.broker)await api("/api/settings",{settings:{broker:$("broker").value}});await api("/api/secrets",b);Object.keys(KEYS).forEach(i=>$(i).value="");toast("Saved (encrypted)");await refresh()}catch(e){toast(e.message)}}
+async function testBroker(){$("testout").textContent="Checking...";try{const r=await api("/api/test-broker",{});$("testout").innerHTML=r.ok?`<span class=ok>Connected to ${r.broker}</span> · client ${r.client||"?"} · free ₹${r.funds} · ${r.holdings} holdings · NIFTY ${r.nifty?.price}`:`<span class=bad>${r.error}</span>`}catch(e){$("testout").innerHTML=`<span class=bad>${e.message}</span>`}}
 async function saveSettings(){if($("k-llm").value)await saveKeys();try{await api("/api/settings",{settings:{capital:+$("cap").value,product:$("product").value,risk_per_trade_pct:+$("rpt").value,max_positions:+$("mp").value,llm_provider:$("llm").value,llm_model:$("llm-model").value||"claude-opus-5-5",llm_base_url:$("llm-url").value}});toast("Saved");await refresh();fillForm()}catch(e){toast(e.message)}}
 async function setMode(m){try{await api("/api/settings",{settings:{mode:m},arm_phrase:$("arm").value});toast(m=="live"?"LIVE mode armed":"Paper mode");$("arm").value="";refresh()}catch(e){toast(e.message)}}
 $("pass").onkeydown=e=>e.key=="Enter"&&login();if(T)boot();

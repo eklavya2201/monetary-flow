@@ -12,8 +12,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from .config import Settings
-from .engine import Engine, now_ist, session_open
-from .store import Store
+from .engine import Engine, make_broker, now_ist, session_open
+from .store import BROKER_SECRETS, Store
 
 DATA = Path(os.environ.get("MF_DATA_DIR", "data"))
 DATA.mkdir(exist_ok=True)
@@ -82,8 +82,8 @@ def save_settings(body: SettingsIn):
     merged = Settings(**{**asdict(current), **{k: v for k, v in body.settings.items() if k in asdict(current)}}).clamped()
     if merged.mode == "live" and current.mode != "live":
         have = store.secrets_present()
-        if not (have["groww_api_key"] and have["groww_totp_secret"]):
-            raise HTTPException(400, "save your Groww API key and TOTP secret first")
+        if not all(have[n] for n in BROKER_SECRETS[merged.broker]):
+            raise HTTPException(400, f"save all {merged.broker} credentials first")
         if body.arm_phrase.strip() != ARM_PHRASE:
             raise HTTPException(400, f'type "{ARM_PHRASE}" to switch to live trading')
         store.log("LIVE MODE ARMED", "warn")
@@ -96,6 +96,10 @@ def save_settings(body: SettingsIn):
 class SecretsIn(BaseModel):
     groww_api_key: str | None = None
     groww_totp_secret: str | None = None
+    angel_api_key: str | None = None
+    angel_client_code: str | None = None
+    angel_mpin: str | None = None
+    angel_totp_secret: str | None = None
     llm_api_key: str | None = None
 
 
@@ -109,15 +113,15 @@ def save_secrets(body: SecretsIn):
 
 @app.post("/api/test-broker", dependencies=[Depends(auth)])
 def test_broker():
-    """Read-only check: log in to Groww and read profile, funds, holdings. Places nothing."""
-    from .brokers.groww import GrowwBroker
-    key, totp = store.secret("groww_api_key"), store.secret("groww_totp_secret")
-    if not (key and totp):
-        raise HTTPException(400, "save the Groww API key and TOTP secret first")
-    g = GrowwBroker(key, totp, store.settings().product)
+    """Read-only check: log in and read profile, funds, holdings, a NIFTY quote. Places nothing."""
+    s = store.settings()
+    creds = tuple(store.secret(n) for n in BROKER_SECRETS[s.broker])
+    if not all(creds):
+        raise HTTPException(400, f"save all {s.broker} credentials first")
+    g = make_broker(s.broker, creds, s.product)
     try:
         prof = g.profile()
-        return {"ok": True, "ucc": prof.get("ucc"), "segments": prof.get("active_segments"),
+        return {"ok": True, "broker": s.broker, "client": prof.get("ucc") or prof.get("clientcode"),
                 "funds": g.funds(), "holdings": len(g.holdings()), "nifty": g.quote("NIFTY")}
     except Exception as e:
         return {"ok": False, "error": f"{type(e).__name__}: {e}"}

@@ -9,7 +9,15 @@ from .brokers import FILLED, CANCELLED, REJECTED, INDEX
 from .brokers.paper import PaperBroker
 from .brokers.yahoo import YahooData
 from .costs import charges
-from .store import Store
+from .store import BROKER_SECRETS, Store
+
+
+def make_broker(name, creds, product):
+    if name == "angel":
+        from .brokers.angel import AngelBroker
+        return AngelBroker(*creds, product=product)
+    from .brokers.groww import GrowwBroker
+    return GrowwBroker(*creds, product=product)
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -33,19 +41,17 @@ class Engine:
 
     # ---------------------------------------------------------------- wiring
     def broker(self):
-        s, st = self.store.settings(), self.store
-        key = (s.mode, s.product, s.capital, st.secret("groww_api_key"), st.secret("groww_totp_secret"))
+        s = self.store.settings()
+        creds = tuple(self.store.secret(n) for n in BROKER_SECRETS[s.broker])
+        key = (s.mode, s.product, s.capital, s.broker, creds)
         if key != self._broker_key:
-            groww = None
-            if key[3] and key[4]:
-                from .brokers.groww import GrowwBroker
-                groww = GrowwBroker(key[3], key[4], s.product)
+            real = make_broker(s.broker, creds, s.product) if all(creds) else None
             if s.mode == "live":
-                if not groww:
-                    raise RuntimeError("live mode needs the Groww API key and TOTP secret")
-                self._broker = groww
+                if not real:
+                    raise RuntimeError(f"live mode needs all {s.broker} credentials")
+                self._broker = real
             else:
-                self._broker = PaperBroker(groww or YahooData(), self.data_dir / "paper_orders.json", s.capital)
+                self._broker = PaperBroker(real or YahooData(), self.data_dir / "paper_orders.json", s.capital)
             self._broker_key = key
         return self._broker
 
@@ -152,7 +158,10 @@ class Engine:
                 if so["status"] == FILLED:
                     self._close(tr, so["avg_price"] or tr["stop"], "stop-loss hit", s)
                     continue
-                if so["status"] in (CANCELLED, REJECTED):  # DAY stop expired overnight: re-arm it
+                if so["status"] == REJECTED:  # broker refused the protection: never sit unprotected
+                    self._exit(b, tr, "stop-loss rejected by broker")
+                    continue
+                if so["status"] == CANCELLED:  # DAY stop expired overnight: re-arm it
                     if px and px <= tr["stop"]:
                         self._exit(b, tr, "stop breached while unprotected")
                     else:

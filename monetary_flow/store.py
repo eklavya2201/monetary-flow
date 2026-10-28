@@ -22,7 +22,10 @@ create table if not exists trades(
   exit_price real, exit_reason text, fees real default 0, pnl real,
   opened_at real, closed_at real);
 """
-SECRET_NAMES = ("groww_api_key", "groww_totp_secret", "llm_api_key")
+SECRET_NAMES = ("groww_api_key", "groww_totp_secret", "angel_api_key", "angel_client_code",
+                "angel_mpin", "angel_totp_secret", "llm_api_key")
+BROKER_SECRETS = {"groww": ("groww_api_key", "groww_totp_secret"),
+                  "angel": ("angel_api_key", "angel_client_code", "angel_mpin", "angel_totp_secret")}
 
 
 class Store:

@@ -31,6 +31,7 @@ class Settings:
     min_rr: float = MIN_RR
     product: str = "CNC"               # CNC = delivery swing (default); MIS = intraday, parked: built but off
     mode: str = "paper"                # paper | live
+    broker: str = "angel"              # angel (free API) | groww (paid API)
     universe: list = field(default_factory=lambda: list(DEFAULT_UNIVERSE))
     llm_provider: str = "none"         # none | anthropic | openai_compatible
     llm_model: str = "claude-opus-5-5"
@@ -46,6 +47,7 @@ class Settings:
         s.capital = max(0.0, float(s.capital))
         s.product = "MIS" if s.product == "MIS" else "CNC"
         s.mode = "live" if s.mode == "live" else "paper"
+        s.broker = "groww" if s.broker == "groww" else "angel"
         s.cycle_minutes = max(1, int(s.cycle_minutes))
         s.universe = [u.strip().upper() for u in s.universe if u.strip()]
         return s

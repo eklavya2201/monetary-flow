@@ -65,3 +65,9 @@ def test_daily_loss_lock_and_no_risk_increase_after_loss():
     after_loss = book(last_loss_risk=25.0)
     p = size(Plan("ITC", entry=400, stop=390, target=440), after_loss, s)
     assert p.risk_amount <= 25.0
+
+
+def test_angel_tick_rounding():
+    from monetary_flow.brokers.angel import AngelBroker
+    assert AngelBroker._tick(101.03, 0.05) == 101.0
+    assert AngelBroker._tick(101.01, 0.05, down=False) == 101.05

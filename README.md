@@ -1,6 +1,7 @@
 # Monetary Flow
 
-A rules-first, long-only trading agent for NSE equities and ETFs on **Groww**. You bring your own keys, the
+A rules-first, long-only trading agent for NSE equities and ETFs. Brokers: **Angel One SmartAPI** (free, default)
+or **Groww** Trade API (paid). You bring your own keys, the
 money stays in your own Groww account, and you control it all from a mobile web UI.
 
 > Profit is not guaranteed. This is an execution tool with hard risk limits, not a prediction machine.
@@ -66,6 +67,22 @@ if that target lies beyond what the setup can reach (4x the stop distance, cappe
 `intraday.py` (15-minute opening-range breakout + VWAP + volume) is built and tested but **off by default**.
 Select "Intraday" in Setup to enable it. At ₹4k, its ~₹12.5 of charges against ₹40 of risk demand a ~3.4R
 move, so most setups are skipped.
+
+## Backtest (run this before risking money)
+
+`python -m monetary_flow.backtest --capital 10000 25000 50000 --years 3` replays the exact strategy and risk
+code over real daily data, with charges included. Results for 2023-10-20 to 2026-10-28, default universe:
+
+| Capital | Trades | Win rate | Return (3 yrs) | Fees | Max drawdown | Positive months |
+|---|---|---|---|---|---|---|
+| ₹10,000 | 13 | 31% | **-0.2%** | ₹498 | 5.1% | 11/36 |
+| ₹25,000 | 36 | 44% | +11.2% | ₹1,780 | 5.4% | 14/36 |
+| ₹50,000 | 40 | 40% | +9.1% | ₹2,916 | 5.9% | 13/36 |
+| NIFTYBEES buy & hold | - | - | **+20.6%** | - | - | - |
+
+**Conclusion:** the strategy controls risk (drawdown about 5%) but has shown **no edge over simply holding the
+index**. At ₹10k it trades about four times a year and charges eat the gains. The universe was picked today,
+so survivorship bias flatters these numbers. Don't run it live expecting profit.
 
 ## Run locally (paper mode, free)
 
