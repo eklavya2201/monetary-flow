@@ -1,0 +1,13 @@
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic>=2
+cryptography==50.0.2
+httpx==0.28.1
+pandas==2.3.3
+yfinance==1.7.0
+curl-cffi==0.16.3
+certifi>=2025.1.31,<2026
+growwapi==1.5.0
+pyotp==2.10.0
+anthropic==2.3.0
+pytest

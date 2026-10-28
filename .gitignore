@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+.smoke/
+.env
+*.db
+paper_orders.json

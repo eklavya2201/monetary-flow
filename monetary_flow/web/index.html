@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<title>Monetary Flow</title>
+<style>
+:root{--page:#0d0d0d;--surface:#1a1a19;--surface2:#242422;--line:#383835;--ink:#f0efec;--ink2:#c3c2b7;--muted:#8f8e86;
+--series:#3987e5;--good:#0ca30c;--warn:#fab219;--crit:#d03b3b;--accent1:#3987e5;--accent2:#9085e9;color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(1200px 600px at 80% -10%,#1b2a44 0%,transparent 60%),radial-gradient(900px 500px at -10% 10%,#251f45 0%,transparent 55%),var(--page);
+color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding:env(safe-area-inset-top) 0 90px}
+.wrap{max-width:520px;margin:0 auto;padding:18px 16px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.brand{font-weight:800;font-size:20px;letter-spacing:-.3px;background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pill{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--ink2)}
+.pill.live{border-color:var(--crit);color:#ffb3b3}.pill.paper{border-color:var(--series);color:#a9cbf5}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:16px;margin-bottom:12px;backdrop-filter:blur(12px)}
+.hero .label{color:var(--ink2);font-size:13px}.hero .big{font-size:38px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.delta{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}.up{color:#5fd35f}.down{color:#ff8a8a}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.tile{background:var(--surface);border-radius:14px;padding:10px}.tile b{display:block;font-size:16px;font-variant-numeric:tabular-nums}.tile span{color:var(--muted);font-size:11.5px}
+.spark{position:relative;margin-top:12px;height:90px;touch-action:none}.spark svg{width:100%;height:100%;display:block}
+.tip{position:absolute;top:-6px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:3px 8px;font-size:12px;white-space:nowrap;pointer-events:none;display:none}
+.bar{height:8px;border-radius:8px;background:var(--surface2);overflow:hidden;margin-top:8px;position:relative}.bar i{display:block;height:100%;background:var(--series);border-radius:8px}
+.bar em{position:absolute;left:70%;top:-3px;bottom:-3px;width:2px;background:var(--ink2)}
+h3{font-size:14px;color:var(--ink2);font-weight:600;margin-bottom:10px}
+.pos{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)}.pos:first-of-type{border-top:0}
+.pos small{color:var(--muted);display:block}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{font:inherit;font-weight:700;border:0;border-radius:14px;padding:13px;color:var(--ink);background:var(--surface2);cursor:pointer}
+button.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#fff}
+button.danger{background:transparent;border:1px solid var(--crit);color:#ffb3b3;grid-column:1/-1}
+button:disabled{opacity:.5}
+label{display:block;font-size:13px;color:var(--ink2);margin:12px 0 5px}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+input:focus,select:focus{outline:2px solid var(--series);border-color:transparent}
+.hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+.ok{color:#5fd35f}.bad{color:#ff8a8a}
+.step{display:flex;gap:10px;align-items:center;margin-bottom:6px}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);font-size:13px;font-weight:800}
+.step.done .n{background:var(--good);color:#fff}
+.log{font:12.5px/1.5 ui-monospace,Consolas,monospace;color:var(--ink2)}.log div{padding:6px 0;border-top:1px solid rgba(255,255,255,.05)}.log .warn{color:var(--warn)}.log .error{color:#ff8a8a}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:6px;padding:10px 10px calc(10px + env(safe-area-inset-bottom));background:rgba(13,13,13,.85);backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.06)}
+nav button{flex:0 1 160px;background:transparent;color:var(--muted);padding:10px}nav button.on{color:var(--ink);background:var(--surface2)}
+.view{display:none}.view.on{display:block}
+#login{min-height:80vh;place-items:center;text-align:center}#login.on{display:grid}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;display:none;max-width:90vw}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;text-align:left;border-top:1px solid rgba(255,255,255,.06)}th{color:var(--muted);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section id="login" class="view on">
+    <div style="width:100%">
+      <div class="brand" style="font-size:34px">Monetary Flow</div>
+      <p class="hint" style="margin:8px 0 22px">Rules-first trading agent. Your keys, your broker, your money.</p>
+      <input id="pass" type="password" placeholder="Passcode" autocomplete="current-password">
+      <button class="primary" style="width:100%;margin-top:10px" onclick="login()">Unlock</button>
+    </div>
+  </section>
+
+  <div id="app" style="display:none">
+    <header><div class="brand">Monetary Flow</div><span id="mode" class="pill">-</span></header>
+
+    <section id="v-home" class="view on">
+      <div class="card hero">
+        <div class="label">Sleeve value</div>
+        <div class="big" id="equity">-</div>
+        <div class="delta" id="daypnl">-</div>
+        <div class="spark" id="spark" aria-label="Equity curve"><svg id="sparksvg" preserveAspectRatio="none"></svg><div class="tip" id="tip"></div></div>
+        <div class="tiles">
+          <div class="tile"><b id="t-cash">-</b><span>Cash</span></div>
+          <div class="tile"><b id="t-real">-</b><span>Realized</span></div>
+          <div class="tile"><b id="t-dd">-</b><span>Max drawdown</span></div>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:var(--ink2)">Deployed <b id="t-dep">-</b> of 70% cap</div>
+        <div class="bar"><i id="depbar" style="width:0"></i><em title="70% cap"></em></div>
+      </div>
+
+      <div class="card"><h3>Engine</h3>
+        <p class="hint" id="engstate" style="margin:-4px 0 12px">-</p>
+        <div class="btns">
+          <button class="primary" id="b-start" onclick="ctl('start')">Start</button>
+          <button id="b-stop" onclick="ctl('stop')">Pause</button>
+          <button onclick="ctl('cycle')">Run one check now</button>
+          <button onclick="go('setup')">Settings</button>
+          <button class="danger" onclick="kill()">Kill switch: exit everything</button>
+        </div>
+      </div>
+
+      <div class="card"><h3>Open positions</h3><div id="positions"><p class="hint">None. Cash is a position too.</p></div></div>
+      <div class="card"><h3>Today</h3><div id="today" class="hint">No trades today.</div></div>
+    </section>
+
+    <section id="v-setup" class="view">
+      <div class="card"><h3>1 · Groww broker</h3>
+        <div class="step" id="s1"><span class="n">1</span><span>Groww Trade API key + TOTP secret</span></div>
+        <label>API key (TOTP type)</label><input id="k-groww" type="password" placeholder="saved keys are never shown again">
+        <label>TOTP secret</label><input id="k-totp" type="password" placeholder="from Groww Cloud → API Keys → Generate TOTP">
+        <p class="hint">Groww Cloud → API Keys. Needs the Trade API subscription and your server's static IP registered there.</p>
+        <div class="btns" style="margin-top:10px"><button class="primary" onclick="saveKeys()">Save keys</button><button onclick="testBroker()">Test (read-only)</button></div>
+        <p class="hint" id="testout"></p>
+      </div>
+
+      <div class="card"><h3>2 · AI second opinion (optional, bring your own)</h3>
+        <label>Provider</label>
+        <select id="llm"><option value="none">None (rules only)</option><option value="anthropic">Anthropic (Claude)</option><option value="openai_compatible">OpenAI-compatible (OpenAI, OpenRouter, Groq...)</option></select>
+        <label>Model</label><input id="llm-model" placeholder="claude-opus-5-5">
+        <label>Base URL (OpenAI-compatible only)</label><input id="llm-url" placeholder="https://api.openai.com/v1">
+        <label>API key</label><input id="k-llm" type="password" placeholder="saved keys are never shown again">
+        <p class="hint">The AI reads recent headlines and can only veto a trade. It never picks, sizes or loosens anything.</p>
+      </div>
+
+      <div class="card"><h3>3 · Capital & risk</h3>
+        <label>Sleeve capital (₹) - only this much is ever traded</label><input id="cap" type="number" min="0" step="100">
+        <label>Style</label><select id="product"><option value="CNC">Swing / delivery (CNC)</option><option value="MIS">Intraday, cash only (MIS)</option></select>
+        <label>Risk per trade: <b id="rpt-v"></b> (max 1%)</label><input id="rpt" type="range" min="0.25" max="1" step="0.05">
+        <label>Max positions: <b id="mp-v"></b> (max 3)</label><input id="mp" type="range" min="1" max="3" step="1">
+        <p class="hint">Fixed by the server, you can only tighten: 70% max deployed · 2% daily stop · 5% weekly stop · R:R ≥ 2 after costs · stop-loss on every position · no averaging down · no leverage.</p>
+        <button class="primary" style="width:100%;margin-top:12px" onclick="saveSettings()">Save settings</button>
+      </div>
+
+      <div class="card"><h3>4 · Fund your Groww account</h3>
+        <p class="hint" style="margin-top:0">Money never passes through Monetary Flow. Add it to your own Groww balance with UPI inside the Groww app, then come back. The engine checks Groww's free balance before every buy.</p>
+        <a href="https://groww.in/" target="_blank" rel="noopener"><button style="width:100%;margin-top:10px">Open Groww → Add money (UPI)</button></a>
+      </div>
+
+      <div class="card"><h3>5 · Go live</h3>
+        <p class="hint" style="margin-top:0">Run on paper first. Live mode places real orders with real money and can lose it.</p>
+        <label>Type <b>I ACCEPT REAL MONEY RISK</b></label><input id="arm" autocomplete="off">
+        <div class="btns" style="margin-top:10px"><button class="danger" style="grid-column:auto" onclick="setMode('live')">Switch to LIVE</button><button onclick="setMode('paper')">Back to paper</button></div>
+      </div>
+    </section>
+
+    <section id="v-log" class="view">
+      <div class="card"><h3>Equity data</h3><div id="eqtable" class="hint">No data yet.</div></div>
+      <div class="card"><h3>Activity</h3><div class="log" id="log"></div></div>
+    </section>
+  </div>
+</div>
+<nav id="nav" style="display:none"><button class="on" data-v="home" onclick="go('home')">Home</button><button data-v="setup" onclick="go('setup')">Setup</button><button data-v="log" onclick="go('log')">Activity</button></nav>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);let T=localStorage.mfToken||"",S=null,timer;
+const inr=v=>v==null?"-":"₹"+Number(v).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const signed=v=>(v>=0?"▲ +":"▼ −")+inr(Math.abs(v)).slice(0);
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",3500)}
+async function api(p,body){const r=await fetch(p,{method:body?"POST":"GET",headers:{"Content-Type":"application/json",Authorization:"Bearer "+T},body:body?JSON.stringify(body):undefined});
+ if(r.status==401){localStorage.removeItem("mfToken");location.reload()}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||r.statusText);return j}
+async function login(){try{const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passcode:$("pass").value})});
+ if(!r.ok)throw 0;T=(await r.json()).token;localStorage.mfToken=T;boot()}catch{toast("Wrong passcode")}}
+function go(v){document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("on",s.id=="v-"+v));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v==v))}
+function spark(curve){const svg=$("sparksvg"),W=300,H=90;svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+ if(curve.length<2){svg.innerHTML=`<text x="0" y="50" fill="#8f8e86" font-size="12">Curve appears after the first checks</text>`;return}
+ const ys=curve.map(c=>c[1]),lo=Math.min(...ys),hi=Math.max(...ys),pad=(hi-lo)*.1||1,X=i=>i/(curve.length-1)*W,Y=v=>H-6-(v-lo+pad)/(hi-lo+2*pad)*(H-12);
+ const d=curve.map((c,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(c[1]).toFixed(1)).join("");
+ svg.innerHTML=`<defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3987e5" stop-opacity=".28"/><stop offset="1" stop-color="#3987e5" stop-opacity="0"/></linearGradient></defs>
+ <line x1="0" x2="${W}" y1="${Y(S.settings.capital).toFixed(1)}" y2="${Y(S.settings.capital).toFixed(1)}" stroke="#383835" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>
+ <path d="${d}L${W} ${H}L0 ${H}Z" fill="url(#g)"/><path d="${d}" fill="none" stroke="#3987e5" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+ <line id="xh" y1="0" y2="${H}" stroke="#c3c2b7" stroke-width="1" vector-effect="non-scaling-stroke" visibility="hidden"/><circle id="dot" r="4" fill="#3987e5" stroke="#1a1a19" stroke-width="2" visibility="hidden"/>`;
+ const box=$("spark"),tip=$("tip");box.onpointermove=e=>{const r=box.getBoundingClientRect(),i=Math.round((e.clientX-r.left)/r.width*(curve.length-1));const c=curve[Math.max(0,Math.min(curve.length-1,i))];
+  const x=X(curve.indexOf(c)),y=Y(c[1]);$("xh").setAttribute("x1",x);$("xh").setAttribute("x2",x);$("xh").setAttribute("visibility","visible");$("dot").setAttribute("cx",x);$("dot").setAttribute("cy",y);$("dot").setAttribute("visibility","visible");
+  tip.style.display="block";tip.style.left=(x/W*r.width)+"px";tip.textContent=inr(c[1])+" · "+new Date(c[0]*1000).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})};
+ box.onpointerleave=()=>{tip.style.display="none";$("xh")?.setAttribute("visibility","hidden");$("dot")?.setAttribute("visibility","hidden")};
+ $("eqtable").innerHTML="<table><tr><th>Time</th><th>Equity</th></tr>"+curve.slice(-12).reverse().map(c=>`<tr><td>${new Date(c[0]*1000).toLocaleString("en-IN")}</td><td>${inr(c[1])}</td></tr>`).join("")+"</table>"}
+function render(){const r=S.report,s=S.settings;
+ $("mode").textContent=s.mode=="live"?"LIVE":"PAPER";$("mode").className="pill "+s.mode;
+ $("equity").textContent=inr(r.ending_equity);const dp=r.day_pnl;$("daypnl").textContent=signed(dp)+" today";$("daypnl").className="delta "+(dp>=0?"up":"down");
+ $("t-cash").textContent=inr(r.cash);$("t-real").textContent=(r.realized_total>=0?"+":"−")+inr(Math.abs(r.realized_total));$("t-dd").textContent=r.max_drawdown_pct+"%";
+ const dep=r.ending_equity?r.invested/r.ending_equity*100:0;$("t-dep").textContent=dep.toFixed(0)+"%";$("depbar").style.width=Math.min(dep,100)+"%";
+ $("engstate").innerHTML=(S.running?"<span class=ok>● Running</span>":"○ Paused")+" · market "+(S.market_open?"open":"closed")+(S.halted.length?" · <span class=bad>⚠ "+S.halted.join("; ")+"</span>":"");
+ $("positions").innerHTML=r.open_positions.length?r.open_positions.map(p=>`<div class="pos"><div><b>${p.symbol}</b> <span class="pill">${p.status}</span><small>${p.qty} @ ${inr(p.entry_price||p.plan_entry)} · SL ${inr(p.stop)} · T ${inr(p.target)}</small></div><div style="text-align:right"><small>risk</small>${inr(p.risk_amount)}</div></div>`).join(""):'<p class="hint">None. Cash is a position too.</p>';
+ $("today").innerHTML=r.trades_today.length?r.trades_today.map(t=>`<div class="pos"><div><b>${t.symbol}</b> ${t.status}<small>${t.exit_reason||t.why?.split("|")[0]||""}</small></div><div>${t.pnl==null?"":`<span class="${t.pnl>=0?"up":"down"}">${signed(t.pnl)}</span>`}</div></div>`).join("")+`<p class="hint">Fees today ${inr(r.fees_today)}</p>`:"No trades today.";
+ $("log").innerHTML=S.logs.map(l=>`<div class="${l.level}">${new Date(l.ts*1000).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})} · ${l.msg.replace(/</g,"&lt;")}</div>`).join("");
+ spark(S.curve);const k=S.secrets;$("s1").classList.toggle("done",k.groww_api_key&&k.groww_totp_secret)}
+function fillForm(){const s=S.settings;$("cap").value=s.capital;$("product").value=s.product;$("rpt").value=s.risk_per_trade_pct;$("mp").value=s.max_positions;$("llm").value=s.llm_provider;$("llm-model").value=s.llm_model;$("llm-url").value=s.llm_base_url;
+ $("rpt-v").textContent=s.risk_per_trade_pct+"%";$("mp-v").textContent=s.max_positions}
+$("rpt").oninput=e=>$("rpt-v").textContent=e.target.value+"%";$("mp").oninput=e=>$("mp-v").textContent=e.target.value;
+async function refresh(){try{S=await api("/api/status");render()}catch(e){toast(e.message)}}
+async function boot(){$("login").classList.remove("on");$("app").style.display="block";$("nav").style.display="flex";await refresh();fillForm();clearInterval(timer);timer=setInterval(refresh,20000)}
+async function ctl(a){try{const r=await api("/api/engine/"+a,{});toast(r.result);refresh()}catch(e){toast(e.message)}}
+async function kill(){if(!confirm("Cancel pending orders and SELL every open position at market now?"))return;ctl("kill")}
+async function saveKeys(){const b={};if($("k-groww").value)b.groww_api_key=$("k-groww").value;if($("k-totp").value)b.groww_totp_secret=$("k-totp").value;if($("k-llm").value)b.llm_api_key=$("k-llm").value;
+ try{await api("/api/secrets",b);["k-groww","k-totp","k-llm"].forEach(i=>$(i).value="");toast("Keys saved (encrypted)");refresh()}catch(e){toast(e.message)}}
+async function testBroker(){$("testout").textContent="Checking...";try{const r=await api("/api/test-broker",{});$("testout").innerHTML=r.ok?`<span class=ok>Connected</span> · client ${r.ucc||"?"} · free ₹${r.funds} · ${r.holdings} holdings · NIFTY ${r.nifty?.price}`:`<span class=bad>${r.error}</span>`}catch(e){$("testout").innerHTML=`<span class=bad>${e.message}</span>`}}
+async function saveSettings(){if($("k-llm").value)await saveKeys();try{await api("/api/settings",{settings:{capital:+$("cap").value,product:$("product").value,risk_per_trade_pct:+$("rpt").value,max_positions:+$("mp").value,llm_provider:$("llm").value,llm_model:$("llm-model").value||"claude-opus-5-5",llm_base_url:$("llm-url").value}});toast("Saved");await refresh();fillForm()}catch(e){toast(e.message)}}
+async function setMode(m){try{await api("/api/settings",{settings:{mode:m},arm_phrase:$("arm").value});toast(m=="live"?"LIVE mode armed":"Paper mode");$("arm").value="";refresh()}catch(e){toast(e.message)}}
+$("pass").onkeydown=e=>e.key=="Enter"&&login();if(T)boot();
+</script>
+</body>
+</html>
