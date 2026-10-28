@@ -1,5 +1,7 @@
 """Order lifecycle against a fake broker: entry fills -> stop placed -> target -> closed."""
 import time
+
+import pandas as pd
 from datetime import datetime
 
 from monetary_flow import engine as eng
@@ -12,6 +14,7 @@ class FakeBroker:
         self.px, self.orders, self.n = {"NIFTY": 25000, "ITC": 400}, {}, 0
 
     def funds(self): return 100000
+    def bars(self, s): return pd.DataFrame()
     def quote(self, s): return {"price": self.px[s], "ts": time.time()}
     def _new(self, **o):
         self.n += 1

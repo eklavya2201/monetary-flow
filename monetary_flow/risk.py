@@ -31,7 +31,7 @@ class Plan:
     symbol: str
     entry: float
     stop: float
-    target: float
+    target: float              # furthest target the setup considers reachable (resistance-capped)
     qty: int = 0
     risk_amount: float = 0.0   # rupees lost if the stop fills, costs included
     reward_amount: float = 0.0  # rupees made at target, costs included
@@ -78,6 +78,12 @@ def size(plan: Plan, book: Book, s: Settings) -> Plan:
         q = plan.qty
         plan.cost_at_stop = charges(q * plan.entry, q * plan.stop, s.product)
         plan.risk_amount = round(q * per_share + plan.cost_at_stop, 2)
+        # nearest target that still pays min_rr after costs; skip if it lies beyond what the setup can reach
+        need = plan.entry
+        for _ in range(3):
+            need = plan.entry + (s.min_rr * plan.risk_amount + charges(q * plan.entry, q * need, s.product)) / q
+        if need <= plan.target:
+            plan.target = round(math.ceil(need * 20) / 20, 2)  # round up to the 0.05 tick
         plan.reward_amount = round(q * (plan.target - plan.entry) - charges(q * plan.entry, q * plan.target, s.product), 2)
     return plan
 

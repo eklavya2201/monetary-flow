@@ -25,7 +25,7 @@ def test_groww_delivery_costs_small_order():
 
 def test_small_delivery_sleeve_is_eaten_by_fixed_costs():
     # Rs 40 risk budget; one CNC round trip already costs ~Rs 35 (Rs 5 min brokerage x2 + Rs 20 DP + GST)
-    s = Settings().clamped()
+    s = Settings(product="CNC").clamped()
     p = size(Plan("ITC", entry=400, stop=388, target=430), book(), s)
     assert p.qty == 0 and "rounds to 0" in " ".join(check(p, book(), s))
 

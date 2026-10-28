@@ -31,6 +31,9 @@ class PaperBroker:
     def candles(self, sym, days=400):
         return self.data.candles(sym, days)
 
+    def bars(self, sym):
+        return self.data.bars(sym)
+
     def buy_limit(self, sym, qty, price):
         return self._new(sym=sym, qty=qty, side="BUY", type="LIMIT", price=price)
 

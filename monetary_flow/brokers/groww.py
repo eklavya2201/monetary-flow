@@ -58,10 +58,17 @@ class GrowwBroker:
 
     def candles(self, sym: str, days: int = 400) -> pd.DataFrame:
         end = datetime.now(IST)
+        return self._candles(sym, end - timedelta(days=days), end, self.g.CANDLE_INTERVAL_DAY)
+
+    def bars(self, sym: str) -> pd.DataFrame:
+        end = datetime.now(IST)
+        return self._candles(sym, end.replace(hour=9, minute=15, second=0), end, self.g.CANDLE_INTERVAL_MIN_5)
+
+    def _candles(self, sym, start, end, interval) -> pd.DataFrame:
         r = self.g.get_historical_candles(
             exchange=self.g.EXCHANGE_NSE, segment=self.g.SEGMENT_CASH, groww_symbol=f"NSE-{sym}",
-            start_time=(end - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S"),
-            end_time=end.strftime("%Y-%m-%d %H:%M:%S"), candle_interval=self.g.CANDLE_INTERVAL_DAY, timeout=20)
+            start_time=start.strftime("%Y-%m-%d %H:%M:%S"), end_time=end.strftime("%Y-%m-%d %H:%M:%S"),
+            candle_interval=interval, timeout=20)
         rows = r.get("candles", []) if isinstance(r, dict) else r
         if not rows:
             return pd.DataFrame()

@@ -22,6 +22,14 @@ class YahooData:
         df = df.rename(columns=str.lower)[["open", "high", "low", "close", "volume"]].dropna()
         return df
 
+    def bars(self, sym: str) -> pd.DataFrame:
+        df = yf.download(_ticker(sym), period="1d", interval="5m", progress=False, auto_adjust=False)
+        if df.empty:
+            return df
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        return df.rename(columns=str.lower)[["open", "high", "low", "close", "volume"]].dropna()
+
     def quote(self, sym: str) -> dict:
         df = yf.download(_ticker(sym), period="1d", interval="1m", progress=False, auto_adjust=False)
         if df.empty:

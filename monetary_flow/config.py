@@ -29,7 +29,7 @@ class Settings:
     daily_loss_pct: float = 2.0
     weekly_loss_pct: float = 5.0
     min_rr: float = MIN_RR
-    product: str = "CNC"               # CNC = delivery swing, MIS = intraday (cash only)
+    product: str = "CNC"               # CNC = delivery swing (default); MIS = intraday, parked: built but off
     mode: str = "paper"                # paper | live
     universe: list = field(default_factory=lambda: list(DEFAULT_UNIVERSE))
     llm_provider: str = "none"         # none | anthropic | openai_compatible

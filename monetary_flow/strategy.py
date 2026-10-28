@@ -62,10 +62,11 @@ def evaluate(sym: str, df: pd.DataFrame, index_df: pd.DataFrame, price: float) -
     entry = round(price, 2)
     stop = round(min(recent.low.min(), entry - 1.0 * atr) - 0.05, 2)
     stop = max(stop, round(entry - 2.5 * atr, 2))  # cap the stop distance
-    target = round(entry + 2.2 * (entry - stop), 2)
+    target = entry + 4.0 * (entry - stop)
     resistance = d.high.iloc[-120:-1].max()
-    if entry < resistance < target:
-        return None, f"resistance at {resistance:.2f} sits before target {target:.2f}"
+    if resistance > entry:
+        target = min(target, resistance)
+    target = round(target, 2)
     why = (f"uptrend (>{last.sma50:.0f} 50d, >{last.sma200:.0f} 200d), RS {rs_stock:.1%} vs NIFTY {rs_index:.1%}, "
            f"pullback to 20-EMA then broke yesterday's high {y.high:.2f}; ATR {atr:.2f}")
     return Plan(symbol=sym, entry=entry, stop=stop, target=target), why

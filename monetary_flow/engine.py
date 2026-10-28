@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import llm, risk, strategy
+from . import intraday, llm, risk, strategy
 from .brokers import FILLED, CANCELLED, REJECTED, INDEX
 from .brokers.paper import PaperBroker
 from .brokers.yahoo import YahooData
@@ -122,7 +122,7 @@ class Engine:
             self.store.put("halted", blocked)
             return "locked: " + "; ".join(blocked)
         self.store.put("halted", [])
-        last_entry = (14, 30) if s.product == "MIS" else (15, 0)
+        last_entry = (13, 30) if s.product == "MIS" else (15, 0)
         if (t.hour, t.minute) < (9, 30) or (t.hour, t.minute) >= last_entry:
             return "outside entry window"
         if len(book.open_symbols) >= s.max_positions:
@@ -166,6 +166,9 @@ class Engine:
                     reason = "intraday square-off"
                 elif nifty.get("price") and self._index_change(b, nifty) <= -2.0:
                     reason = "market falling hard (NIFTY -2% today)"
+                elif s.product == "MIS":
+                    broken = intraday.thesis_broken(b.bars(sym), tr["entry_price"])
+                    reason = f"thesis invalid: {broken}" if broken else None
                 elif (t.hour, t.minute) >= (15, 15) and px:
                     df = self.candles(sym)
                     broken = strategy.thesis_broken(df) if len(df) > 60 else None
@@ -215,9 +218,24 @@ class Engine:
                                 fees=fees, pnl=pnl, closed_at=time.time())
         self.store.log(f"CLOSED {tr['symbol']} @ {exit_price}: {reason}, P/L {pnl:+.2f} after Rs {fees} costs")
 
+    def completed_days(self, sym):
+        df = self.candles(sym)
+        return df[[d.date() < now_ist().date() for d in df.index]] if len(df) else df
+
     def try_entry(self, b, s, book, funds) -> str:
-        index_df = self.candles(INDEX)
-        ok, why = strategy.market_ok(index_df)
+        if s.product == "MIS":
+            index_days = self.completed_days(INDEX)
+            index_bars = b.bars(INDEX)
+            if len(index_days) < 2 or index_bars.empty:
+                return "no entries: index data missing"
+            prev_close = index_days.close.iloc[-1]
+            ok, why = intraday.market_ok(index_bars, prev_close)
+            index_change = (index_bars.close.iloc[-1] / prev_close - 1) * 100
+            setup = lambda sym, price: intraday.evaluate(sym, b.bars(sym), self.completed_days(sym), index_change, price)
+        else:
+            index_df = self.candles(INDEX)
+            ok, why = strategy.market_ok(index_df)
+            setup = lambda sym, price: strategy.evaluate(sym, self.candles(sym), index_df, price)
         if not ok:
             return f"no entries: {why}"
         candidates = []
@@ -228,7 +246,7 @@ class Engine:
                 q = b.quote(sym)
                 if not q.get("price") or time.time() - q["ts"] > self.max_quote_age():
                     continue  # stale or missing: skip, never guess
-                plan, reason = strategy.evaluate(sym, self.candles(sym), index_df, q["price"])
+                plan, reason = setup(sym, q["price"])
             except Exception as e:
                 self.store.log(f"{sym}: data error, skipped ({type(e).__name__})", "warn")
                 continue
